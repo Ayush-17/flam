@@ -31,6 +31,8 @@ ImageProcessor::~ImageProcessor() {
 }
 
 void ImageProcessor::processFrame(uint8_t* frameData, int width, int height, int rowStride) {
+    std::lock_guard<std::mutex> lock(frameMutex);
+
     if (frameData == nullptr) {
         LOGE("processFrame: frameData is null");
         return;
@@ -90,20 +92,23 @@ void ImageProcessor::drawGl() {
         return;
     }
 
-    if (newFrameAvailable && !processedMat.empty()) {
-        glBindTexture(GL_TEXTURE_2D, textureId);
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_LUMINANCE,
-            processedMat.cols,
-            processedMat.rows,
-            0,
-            GL_LUMINANCE,
-            GL_UNSIGNED_BYTE,
-            processedMat.data);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        newFrameAvailable = false;
+    {
+        std::lock_guard<std::mutex> lock(frameMutex);
+        if (newFrameAvailable && !processedMat.empty()) {
+            glBindTexture(GL_TEXTURE_2D, textureId);
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_LUMINANCE,
+                processedMat.cols,
+                processedMat.rows,
+                0,
+                GL_LUMINANCE,
+                GL_UNSIGNED_BYTE,
+                processedMat.data);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            newFrameAvailable = false;
+        }
     }
 
     renderer->draw(textureId);

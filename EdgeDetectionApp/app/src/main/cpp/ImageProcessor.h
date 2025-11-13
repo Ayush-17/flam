@@ -5,6 +5,7 @@
 #include <opencv2/core.hpp>
 #include <GLES2/gl2.h>
 #include "SimpleTextureRenderer.h"
+#include <mutex>
 
 class ImageProcessor {
 public:
@@ -32,6 +33,7 @@ private:
     bool newFrameAvailable;
 
     SimpleTextureRenderer* renderer;
+    std::mutex frameMutex;
 };
 
 #endif //EDGEDETECTION_IMAGEPROCESSOR_H
