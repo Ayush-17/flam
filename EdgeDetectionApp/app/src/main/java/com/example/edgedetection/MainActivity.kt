@@ -8,13 +8,24 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.edgedetection.databinding.ActivityMainBinding
+import java.nio.ByteBuffer
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var cameraController: CameraController
+    private var nativeInitialized = false
 
     private val CAMERA_PERMISSION_REQUEST_CODE = 101
+
+    private external fun initNative()
+    private external fun destroyNative()
+    private external fun processFrameNative(
+        width: Int,
+        height: Int,
+        yPlane: ByteBuffer,
+        yStride: Int
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,6 +35,7 @@ class MainActivity : AppCompatActivity() {
         binding.fpsText.text = "FPS: ..."
 
         if (checkCameraPermission()) {
+            ensureNativeInit()
             setupCamera()
         } else {
             requestCameraPermission()
@@ -42,6 +54,7 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                ensureNativeInit()
                 setupCamera()
             } else {
                 Toast.makeText(this, "Camera permission is required", Toast.LENGTH_LONG).show()
@@ -66,5 +79,25 @@ class MainActivity : AppCompatActivity() {
             cameraController.stop()
         }
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        if (nativeInitialized) {
+            destroyNative()
+        }
+        super.onDestroy()
+    }
+
+    private fun ensureNativeInit() {
+        if (!nativeInitialized) {
+            initNative()
+            nativeInitialized = true
+        }
+    }
+
+    companion object {
+        init {
+            System.loadLibrary("native-lib")
+        }
     }
 }
