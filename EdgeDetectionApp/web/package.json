@@ -1,0 +1,16 @@
+{
+  "name": "web-viewer",
+  "version": "1.0.0",
+  "description": "A minimal web viewer for the R&D Intern assessment",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "undici-types": "^5.26.5"
+  },
+  "author": "Ayush",
+  "license": "ISC"
+}

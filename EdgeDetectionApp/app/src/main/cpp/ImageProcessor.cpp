@@ -14,7 +14,8 @@ ImageProcessor::ImageProcessor()
       newFrameAvailable(false),
       viewportWidth(0),
       viewportHeight(0),
-      renderer(nullptr) {
+      renderer(nullptr),
+      currentFps(0.0f) {
     LOGD("ImageProcessor created");
 }
 
@@ -75,6 +76,8 @@ void ImageProcessor::initGl() {
     }
 
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    lastFrameTime = std::chrono::steady_clock::now();
+    currentFps = 0.0f;
     LOGD("initGl: Texture ID %u", textureId);
 }
 
@@ -85,11 +88,18 @@ void ImageProcessor::resizeGl(int width, int height) {
     LOGD("resizeGl: viewport %d x %d", width, height);
 }
 
-void ImageProcessor::drawGl() {
+float ImageProcessor::drawGl() {
+    auto now = std::chrono::steady_clock::now();
+    float deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(now - lastFrameTime).count() / 1'000'000.0f;
+    lastFrameTime = now;
+    if (deltaTime > 0.0f) {
+        currentFps = (currentFps * 0.9f) + ((1.0f / deltaTime) * 0.1f);
+    }
+
     glClear(GL_COLOR_BUFFER_BIT);
 
     if (renderer == nullptr || textureId == 0) {
-        return;
+        return currentFps;
     }
 
     {
@@ -112,4 +122,5 @@ void ImageProcessor::drawGl() {
     }
 
     renderer->draw(textureId);
+    return currentFps;
 }

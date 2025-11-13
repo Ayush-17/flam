@@ -38,7 +38,13 @@ class MainActivity : AppCompatActivity() {
         binding.fpsText.text = "FPS: ..."
 
         glSurfaceView = binding.glSurfaceView
-        glRenderer = GLView()
+        glRenderer = GLView().apply {
+            fpsListener = { fps ->
+                runOnUiThread {
+                    binding.fpsText.text = String.format("FPS: %.1f", fps)
+                }
+            }
+        }
         glSurfaceView.setEGLContextClientVersion(2)
         glSurfaceView.setRenderer(glRenderer)
         glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY

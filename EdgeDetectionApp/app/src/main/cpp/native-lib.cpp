@@ -59,11 +59,12 @@ Java_com_example_edgedetection_GLView_onGlSurfaceChanged(JNIEnv* env, jobject th
     }
 }
 
-JNIEXPORT void JNICALL
+JNIEXPORT jfloat JNICALL
 Java_com_example_edgedetection_GLView_onGlDrawFrame(JNIEnv* env, jobject thiz) {
     if (imageProcessor != nullptr) {
-        imageProcessor->drawGl();
+        return imageProcessor->drawGl();
     }
+    return 0.0f;
 }
 
 }

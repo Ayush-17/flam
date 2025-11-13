@@ -6,6 +6,7 @@
 #include <GLES2/gl2.h>
 #include "SimpleTextureRenderer.h"
 #include <mutex>
+#include <chrono>
 
 class ImageProcessor {
 public:
@@ -16,9 +17,7 @@ public:
 
     void initGl();
     void resizeGl(int width, int height);
-    void drawGl();
-
-    uint8_t* getProcessedFrame();
+    float drawGl();
 
 private:
     int frameWidth;
@@ -28,12 +27,15 @@ private:
     cv::Mat processedMat;
 
     GLuint textureId;
+    bool newFrameAvailable;
     int viewportWidth;
     int viewportHeight;
-    bool newFrameAvailable;
 
     SimpleTextureRenderer* renderer;
     std::mutex frameMutex;
+
+    std::chrono::steady_clock::time_point lastFrameTime;
+    float currentFps;
 };
 
 #endif //EDGEDETECTION_IMAGEPROCESSOR_H

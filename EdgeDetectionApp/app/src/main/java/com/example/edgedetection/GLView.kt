@@ -8,9 +8,12 @@ import javax.microedition.khronos.opengles.GL10
 class GLView : GLSurfaceView.Renderer {
 
     private val TAG = "GLView"
+
+    var fpsListener: ((Float) -> Unit)? = null
+
     private external fun onGlSurfaceCreated()
     private external fun onGlSurfaceChanged(width: Int, height: Int)
-    private external fun onGlDrawFrame()
+    private external fun onGlDrawFrame(): Float
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         Log.d(TAG, "onSurfaceCreated: delegating to native")
@@ -23,6 +26,7 @@ class GLView : GLSurfaceView.Renderer {
     }
 
     override fun onDrawFrame(gl: GL10?) {
-        onGlDrawFrame()
+        val fps = onGlDrawFrame()
+        fpsListener?.invoke(fps)
     }
 }
