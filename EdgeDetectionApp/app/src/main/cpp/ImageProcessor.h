@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <opencv2/core.hpp>
 #include <GLES2/gl2.h>
+#include "SimpleTextureRenderer.h"
 
 class ImageProcessor {
 public:
@@ -25,17 +26,12 @@ private:
     cv::Mat grayMat;
     cv::Mat processedMat;
 
-    GLuint shaderProgram;
     GLuint textureId;
-    GLint attribPosition;
-    GLint attribTexCoord;
-    GLint uniformTexture;
     int viewportWidth;
     int viewportHeight;
     bool newFrameAvailable;
 
-    GLuint loadShader(GLenum type, const char* shaderSrc);
-    GLuint createProgram(const char* vertexSrc, const char* fragmentSrc);
+    SimpleTextureRenderer* renderer;
 };
 
 #endif //EDGEDETECTION_IMAGEPROCESSOR_H

@@ -17,7 +17,8 @@ add_library(
         native-lib
         SHARED
         native-lib.cpp
-        ImageProcessor.cpp)
+        ImageProcessor.cpp
+        SimpleTextureRenderer.cpp)
 
 # Find and include the NDK logging library (for android/log.h)
 find_library(
