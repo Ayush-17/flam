@@ -19,6 +19,15 @@ Java_com_example_edgedetection_MainActivity_initNative(JNIEnv* env, jobject thiz
 }
 
 JNIEXPORT void JNICALL
+Java_com_example_edgedetection_MainActivity_destroyNative(JNIEnv* env, jobject thiz) {
+    LOGD("destroyNative called");
+    if (imageProcessor != nullptr) {
+        delete imageProcessor;
+        imageProcessor = nullptr;
+    }
+}
+
+JNIEXPORT void JNICALL
 Java_com_example_edgedetection_MainActivity_processFrameNative(
         JNIEnv* env,
         jobject thiz,
@@ -27,22 +36,33 @@ Java_com_example_edgedetection_MainActivity_processFrameNative(
         jobject y_plane,
         jint y_stride) {
     auto* yBuffer = reinterpret_cast<uint8_t*>(env->GetDirectBufferAddress(y_plane));
-    if (yBuffer == nullptr) {
-        LOGD("Failed to get Y-plane buffer address");
+    if (yBuffer == nullptr || imageProcessor == nullptr) {
         return;
     }
 
+    imageProcessor->processFrame(yBuffer, width, height, y_stride);
+}
+
+JNIEXPORT void JNICALL
+Java_com_example_edgedetection_GLView_onGlSurfaceCreated(JNIEnv* env, jobject thiz) {
+    LOGD("JNI: onGlSurfaceCreated");
     if (imageProcessor != nullptr) {
-        imageProcessor->processFrame(yBuffer, width, height, y_stride);
+        imageProcessor->initGl();
     }
 }
 
 JNIEXPORT void JNICALL
-Java_com_example_edgedetection_MainActivity_destroyNative(JNIEnv* env, jobject thiz) {
-    LOGD("destroyNative called");
+Java_com_example_edgedetection_GLView_onGlSurfaceChanged(JNIEnv* env, jobject thiz, jint width, jint height) {
+    LOGD("JNI: onGlSurfaceChanged %dx%d", width, height);
     if (imageProcessor != nullptr) {
-        delete imageProcessor;
-        imageProcessor = nullptr;
+        imageProcessor->resizeGl(width, height);
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_com_example_edgedetection_GLView_onGlDrawFrame(JNIEnv* env, jobject thiz) {
+    if (imageProcessor != nullptr) {
+        imageProcessor->drawGl();
     }
 }
 

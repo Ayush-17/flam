@@ -2,6 +2,7 @@ package com.example.edgedetection
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -13,10 +14,12 @@ import java.nio.ByteBuffer
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var glSurfaceView: GLSurfaceView
+    private lateinit var glRenderer: GLView
     private lateinit var cameraController: CameraController
-    private var nativeInitialized = false
 
     private val CAMERA_PERMISSION_REQUEST_CODE = 101
+    private var nativeInitialized = false
 
     private external fun initNative()
     private external fun destroyNative()
@@ -34,9 +37,15 @@ class MainActivity : AppCompatActivity() {
 
         binding.fpsText.text = "FPS: ..."
 
+        glSurfaceView = binding.glSurfaceView
+        glRenderer = GLView()
+        glSurfaceView.setEGLContextClientVersion(2)
+        glSurfaceView.setRenderer(glRenderer)
+        glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+
         if (checkCameraPermission()) {
-            ensureNativeInit()
             setupCamera()
+            ensureNativeInit()
         } else {
             requestCameraPermission()
         }
@@ -47,15 +56,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestCameraPermission() {
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST_CODE)
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.CAMERA),
+            CAMERA_PERMISSION_REQUEST_CODE
+        )
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                ensureNativeInit()
                 setupCamera()
+                ensureNativeInit()
             } else {
                 Toast.makeText(this, "Camera permission is required", Toast.LENGTH_LONG).show()
                 finish()
@@ -64,13 +77,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupCamera() {
-        cameraController = CameraController(this, binding.textureView) { width, height, buffer, stride ->
+        cameraController = CameraController(this, null) { width, height, buffer, stride ->
             processFrameNative(width, height, buffer, stride)
         }
     }
 
     override fun onResume() {
         super.onResume()
+        glSurfaceView.onResume()
         if (::cameraController.isInitialized) {
             cameraController.start()
         }
@@ -80,12 +94,14 @@ class MainActivity : AppCompatActivity() {
         if (::cameraController.isInitialized) {
             cameraController.stop()
         }
+        glSurfaceView.onPause()
         super.onPause()
     }
 
     override fun onDestroy() {
         if (nativeInitialized) {
             destroyNative()
+            nativeInitialized = false
         }
         super.onDestroy()
     }

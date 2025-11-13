@@ -18,12 +18,12 @@ import java.nio.ByteBuffer
 
 class CameraController(
     private val context: Context,
-    private val textureView: TextureView,
+    private val textureView: TextureView?,
     private val onFrameAvailable: (width: Int, height: Int, buffer: ByteBuffer, rowStride: Int) -> Unit
 ) {
 
     private val TAG = "CameraController"
-    private val CAMERA_ID = "0" // Use rear camera
+    private val CAMERA_ID = "0"
 
     private var cameraDevice: CameraDevice? = null
     private var captureSession: CameraCaptureSession? = null
@@ -42,10 +42,7 @@ class CameraController(
         val plane = image.planes.firstOrNull()
         if (plane != null) {
             val buffer = plane.buffer
-            val width = image.width
-            val height = image.height
-            val rowStride = plane.rowStride
-            onFrameAvailable(width, height, buffer, rowStride)
+            onFrameAvailable(image.width, image.height, buffer, plane.rowStride)
         }
         image.close()
     }
@@ -72,21 +69,25 @@ class CameraController(
 
     fun start() {
         startBackgroundThread()
-        if (textureView.isAvailable) {
-            openCamera()
-        } else {
-            textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-                override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
-                    Log.d(TAG, "TextureView available")
-                    openCamera()
+        if (textureView != null) {
+            if (textureView.isAvailable) {
+                openCamera()
+            } else {
+                textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                    override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
+                        Log.d(TAG, "TextureView available")
+                        openCamera()
+                    }
+
+                    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
+
+                    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean = true
+
+                    override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
                 }
-
-                override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
-
-                override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean = true
-
-                override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
             }
+        } else {
+            openCamera()
         }
     }
 
@@ -98,9 +99,7 @@ class CameraController(
     }
 
     private fun openCamera() {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             Log.e(TAG, "Camera permission not granted")
             return
         }
@@ -139,33 +138,35 @@ class CameraController(
     }
 
     private fun createPreviewSession() {
-        val texture = textureView.surfaceTexture ?: return
-        if (!::captureSize.isInitialized) {
-            captureSize = Size(textureView.width.coerceAtLeast(1), textureView.height.coerceAtLeast(1))
-        }
-        texture.setDefaultBufferSize(captureSize.width, captureSize.height)
-        val previewSurface = Surface(texture)
+        val camera = cameraDevice ?: return
         val processingSurface = imageReader?.surface ?: return
 
-        try {
-            val previewRequestBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-            previewRequestBuilder?.addTarget(previewSurface)
-            previewRequestBuilder?.addTarget(processingSurface)
+        val surfaces = mutableListOf(processingSurface)
+        val texture = textureView?.surfaceTexture
+        if (texture != null) {
+            if (!::captureSize.isInitialized) {
+                captureSize = Size(textureView.width.coerceAtLeast(1), textureView.height.coerceAtLeast(1))
+            }
+            texture.setDefaultBufferSize(captureSize.width, captureSize.height)
+            surfaces.add(Surface(texture))
+        }
 
-            cameraDevice?.createCaptureSession(
-                listOf(previewSurface, processingSurface),
+        try {
+            val requestBuilder = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+            surfaces.forEach { requestBuilder.addTarget(it) }
+
+            camera.createCaptureSession(
+                surfaces,
                 object : CameraCaptureSession.StateCallback() {
                     override fun onConfigured(session: CameraCaptureSession) {
                         Log.d(TAG, "Capture session configured")
                         captureSession = session
                         try {
-                            previewRequestBuilder?.let {
-                                it.set(
-                                    CaptureRequest.CONTROL_AF_MODE,
-                                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
-                                )
-                                session.setRepeatingRequest(it.build(), null, backgroundHandler)
-                            }
+                            requestBuilder.set(
+                                CaptureRequest.CONTROL_AF_MODE,
+                                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
+                            )
+                            session.setRepeatingRequest(requestBuilder.build(), null, backgroundHandler)
                         } catch (e: CameraAccessException) {
                             Log.e(TAG, "Failed to set repeating request", e)
                         }

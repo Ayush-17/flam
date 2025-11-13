@@ -23,9 +23,17 @@ add_library(
 find_library(
         log-lib
         log)
+find_library(
+        gles-lib
+        GLESv2)
+find_library(
+        egl-lib
+        EGL)
 
 # Link the libraries to our native-lib
 target_link_libraries(
         native-lib
+        ${gles-lib}
+        ${egl-lib}
         ${OpenCV_LIBS}
         ${log-lib})
