@@ -64,7 +64,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupCamera() {
-        cameraController = CameraController(this, binding.textureView)
+        cameraController = CameraController(this, binding.textureView) { width, height, buffer, stride ->
+            processFrameNative(width, height, buffer, stride)
+        }
     }
 
     override fun onResume() {
