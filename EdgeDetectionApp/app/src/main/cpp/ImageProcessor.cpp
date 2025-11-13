@@ -28,7 +28,7 @@ void ImageProcessor::processFrame(uint8_t* frameData, int width, int height, int
     }
 
     grayMat = cv::Mat(height, width, CV_8UC1, frameData, rowStride);
-    grayMat.copyTo(processedMat);
+    cv::Canny(grayMat, processedMat, 50, 100);
 }
 
 uint8_t* ImageProcessor::getProcessedFrame() {
