@@ -4,6 +4,14 @@ cmake_minimum_required(VERSION 3.18.1)
 # Declares the project name
 project("edgedetection")
 
+# --- OpenCV Integration ---
+set(OpenCV_DIR ${CMAKE_SOURCE_DIR}/sdk/native/jni)
+message(STATUS "OpenCV SDK path: ${OpenCV_DIR}")
+
+find_package(OpenCV REQUIRED)
+message(STATUS "OpenCV version: ${OpenCV_VERSION}")
+# --- End OpenCV Integration ---
+
 # Add the C++ files to create the shared library "native-lib"
 add_library(
         native-lib
@@ -19,4 +27,5 @@ find_library(
 # Link the libraries to our native-lib
 target_link_libraries(
         native-lib
+        ${OpenCV_LIBS}
         ${log-lib})

@@ -33,7 +33,7 @@ Java_com_example_edgedetection_MainActivity_processFrameNative(
     }
 
     if (imageProcessor != nullptr) {
-        imageProcessor->processFrame(yBuffer, width, height);
+        imageProcessor->processFrame(yBuffer, width, height, y_stride);
     }
 }
 
